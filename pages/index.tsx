@@ -1,27 +1,32 @@
-import axios from "../lib/api/index";
-import { GetServerSideProps, NextPage } from "next";
+import { NextPage } from "next";
 import TodoList from "../components/todoList/TodoList";
 import { TodoType } from "../types/todo";
 import { getTodosAPI } from "../lib/api/todos";
+import { wrapper } from "../store";
+import { todoActions } from "../store/todo";
 
-interface IProps {
-  todos: TodoType[]
-};
-
-const index: NextPage<IProps> = ({ todos }) => {
+const index: NextPage = () => {
   return (
-    <TodoList todos={todos} />
+    <TodoList />
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async () => {
+export const getServerSideProps = wrapper.getServerSideProps(store => async({}):Promise<any> => {
   try {
-    const {data} = await getTodosAPI();
-    return { props: {todos: data} };
-  } catch(err) {
+    const { data } = await getTodosAPI();
+    store.dispatch(todoActions.setTodo(data));
+    return { 
+      props: {
+        todos: data
+    }}
+  } catch (err) {
     console.log(err);
-    return { props: { todos: [] } };
+    return {
+      props: {
+        todos: []
+      }
+    }
   }
-}
+})
 
 export default index;

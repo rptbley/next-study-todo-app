@@ -1,11 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
 import styled from "styled-components";
 import palette from "../../styles/palette";
-import { TodoType } from "../../types/todo";
 import TrashCanIcon from "../../public/trash_can.svg";
 import CheckMarkIcon from "../../public/check_mark.svg";
 import { checkTodoAPI, deleteTodoAPI } from "../../lib/api/todos";
-import { useRouter } from "next/router";
+import { useSelector } from "../../store/index";
+import { useDispatch } from "react-redux";
+import { todoActions } from "../../store/todo";
 
 const Container = styled.div`
     width: 100%;
@@ -126,16 +127,13 @@ const Container = styled.div`
     }
 `;
 
-interface IProps {
-    todos: TodoType[]
-}
-
 type ObjectIndexType = {
     [key: string]: number | undefined;
 };
 
-const TodoList: React.FC<IProps> = ({ todos }) => {
-    const router = useRouter();
+const TodoList: React.FC = () => {
+    const todos = useSelector(state => state.todo.todos);
+    const dispatch = useDispatch();
 
     const [localTodos, setLocalTodos] = useState(todos);
     const getTodoColorNums = useCallback(() => {
@@ -145,7 +143,7 @@ const TodoList: React.FC<IProps> = ({ todos }) => {
         let green = 0;
         let blue = 0;
         let navy = 0;
-        localTodos.forEach((todo) => {
+        todos.forEach((todo) => {
             switch(todo.color) {
                 case "red":
                     red += 1;
@@ -176,7 +174,7 @@ const TodoList: React.FC<IProps> = ({ todos }) => {
 
     const todoColorNums2 = useMemo(() => {
         const colors: ObjectIndexType = {};
-        localTodos.forEach((todo) => {
+        todos.forEach((todo) => {
             const value = colors[todo.color];
             if(!value) {
                 colors[`${todo.color}`] = 1;
@@ -190,13 +188,13 @@ const TodoList: React.FC<IProps> = ({ todos }) => {
     const checkTodo = async (id: number) => {
         try {
             await checkTodoAPI(id);
-            const newTodos = localTodos.map((todo) => {
+            const newTodos = todos.map((todo) => {
                 if(todo.id === id) {
                     return { ...todo, checked: !todo.checked };
                 }
                 return todo;
             });
-            setLocalTodos(newTodos);
+            dispatch(todoActions.setTodo(newTodos));
         } catch(err) {
             console.log(err);
         }
@@ -205,8 +203,8 @@ const TodoList: React.FC<IProps> = ({ todos }) => {
     const deleteTodo = async (id: number) => {
         try {
             await deleteTodoAPI(id);
-            const newTodos = localTodos.filter((todo) => todo.id !== id);
-            setLocalTodos(newTodos);
+            const newTodos = todos.filter((todo) => todo.id !== id);
+            dispatch(todoActions.setTodo(newTodos));
             console.log("삭제했습니다.");
         } catch(err) {
             console.log(err)
@@ -228,7 +226,7 @@ const TodoList: React.FC<IProps> = ({ todos }) => {
                 </div>
             </div>
             <ul className="todo-list">
-                {localTodos.map((todo) => (
+                {todos.map((todo) => (
                     <li className="todo-item" key={todo.id}>
                         <div className="todo-left-side">
                             <div className={`todo-color-block bg-${todo.color}`}/>
